@@ -46,7 +46,7 @@
     <ClCompile Include="graph.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="edgeItem.cpp">
+    <ClCompile Include="EdgeItem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -54,7 +54,7 @@
     <QtMoc Include="NodeItem.h">
       <Filter>Header Files</Filter>
     </QtMoc>
-    <QtMoc Include="edgeItem.h">
+    <QtMoc Include="EdgeItem.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>

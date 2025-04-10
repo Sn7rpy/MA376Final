@@ -33,11 +33,11 @@ MainWindow::MainWindow(QWidget *parent)
     modeGroup->resize(150, 70);
 
     QRadioButton* drawEdgeBtn = new QRadioButton("Draw Edges", modeGroup);
-    QRadioButton* nameNodeBtn = new QRadioButton("Index Nodes", modeGroup);
+    QRadioButton* changeIndexesBtn = new QRadioButton("Change Indicies", modeGroup);
 
     QVBoxLayout* vbox = new QVBoxLayout;
     vbox->addWidget(drawEdgeBtn);
-    vbox->addWidget(nameNodeBtn);
+    vbox->addWidget(changeIndexesBtn);
     vbox->addStretch(1);
     modeGroup->setLayout(vbox);
 
@@ -50,9 +50,9 @@ MainWindow::MainWindow(QWidget *parent)
         }
         });
 
-    connect(nameNodeBtn, &QRadioButton::toggled, this, [=](bool checked) {
+    connect(changeIndexesBtn, &QRadioButton::toggled, this, [=](bool checked) {
         if (checked) {
-            state = WindowState::NameNode;
+            state = WindowState::ChangeIndicies;
         }
         });
 
@@ -71,7 +71,7 @@ void MainWindow::addNodesFromPoints(const std::vector<QPointF>& points)
             if (!firstSelected) {
                 firstSelected = clickedNode;
                 firstSelected->setPen(highlightPen);
-                if (state == WindowState::NameNode) {
+                if (state == WindowState::ChangeIndicies) {
                     bool ok;
                     QString inputText;
                     if (firstSelected->index != "") {
@@ -92,18 +92,13 @@ void MainWindow::addNodesFromPoints(const std::vector<QPointF>& points)
             }
             else if (firstSelected != clickedNode) {
                 if (state == WindowState::DrawEdges){
-                    QLineF line(firstSelected->scenePos(), clickedNode->scenePos());
-                    //bool ok;
-
-                    //QString newIdx = QInputDialog::getText(this, "Name Edge", "Name:", QLineEdit::Normal, "", &ok);
-
-                    //if (ok && !newIdx.isEmpty()) {
-                    //    line.setIndex(newIdx);
-                    //}
+                    EdgeItem* edge = new EdgeItem(QLineF(firstSelected->scenePos(), clickedNode->scenePos()));
+                    
                 
-                    if (std::find(linesVct.begin(), linesVct.end(), line) == linesVct.end()) {
-                        scene->addLine(line, QPen(Qt::blue, 2));
-                        linesVct.push_back(line);
+                    if (std::find(edgesVct.begin(), edgesVct.end(), edge) == edgesVct.end()) {
+                        scene->addItem(edge);
+                        connect(edge, &EdgeItem::edgeClicked, this, &MainWindow::onEdgeClicked);
+                        edgesVct.push_back(edge);
                         firstSelected->setPen(defaultPen);
                         firstSelected = clickedNode;
                         firstSelected->setPen(highlightPen);
@@ -113,7 +108,7 @@ void MainWindow::addNodesFromPoints(const std::vector<QPointF>& points)
                         firstSelected = nullptr;
                     }
                 }
-                else if(state == WindowState::NameNode){
+                else if(state == WindowState::ChangeIndicies){
                     firstSelected->setPen(defaultPen);
                     firstSelected = nullptr;
                 }
@@ -149,9 +144,10 @@ void MainWindow::saveLinesToFile() {
     file.open(QIODeviceBase::WriteOnly);
 
     QDataStream out(&file);
-    out << static_cast<quint32>(linesVct.size());
-    for (const QLineF& line : linesVct) {
-        out << line;
+    out << static_cast<quint32>(edgesVct.size());
+    for (EdgeItem* edge : edgesVct) {
+        out << edge->getLine();
+        out << edge->getIndex();
     }
     file.close();
 }
@@ -166,10 +162,15 @@ void MainWindow::loadLinesFromFile(const QString& fileName) {
 
     for (quint32 i = 0; i < count; i++) {
         QLineF line;
+        QString index;
         in >> line;
+        in >> index;
 
-        scene->addLine(line, QPen(Qt::blue, 2));
-        linesVct.push_back(line);
+        EdgeItem* edge = new EdgeItem(line, index);
+        scene->addItem(edge);
+        connect(edge, &EdgeItem::edgeClicked, this, &MainWindow::onEdgeClicked);
+        edgesVct.push_back(edge);
+
     }
 
     file.close();
@@ -179,6 +180,19 @@ void MainWindow::loadLinesFromFile(const QString& fileName) {
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::onEdgeClicked(EdgeItem* edge)
+{
+    if (state == WindowState::ChangeIndicies) {
+        bool ok;
+
+        QString newIdx = QInputDialog::getText(this, "Name Edge", "Name:", QLineEdit::Normal, edge->getIndex(), &ok);
+
+        if (ok && !newIdx.isEmpty()) {
+            edge->setIndex(newIdx);
+        }
+    }
 }
 
 
