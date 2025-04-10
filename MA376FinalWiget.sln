@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34902.65
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MA376FinalWiget", "MA376FinalWiget\MA376FinalWiget.vcxproj", "{1347273F-A124-4735-B894-2296308205B6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1347273F-A124-4735-B894-2296308205B6}.Debug|x64.ActiveCfg = Debug|x64
+		{1347273F-A124-4735-B894-2296308205B6}.Debug|x64.Build.0 = Debug|x64
+		{1347273F-A124-4735-B894-2296308205B6}.Release|x64.ActiveCfg = Release|x64
+		{1347273F-A124-4735-B894-2296308205B6}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C82A353B-F0CF-43E4-A6F2-FF19DBB53ABC}
+	EndGlobalSection
+EndGlobal
