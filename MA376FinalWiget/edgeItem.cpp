@@ -3,6 +3,17 @@
 edgeItem::edgeItem(const QPointF& outNode, const QPointF& inNode)
 	:QLineF(outNode,inNode)
 {
-	index;
-	weight;
+	outNd = outNode;
+	inNd = inNode;
+
+}
+
+void edgeItem::setWeight(int& newValue)
+{
+	weight = newValue;
+}
+
+void edgeItem::setIndex(QString& idx)
+{
+	index = idx;
 }

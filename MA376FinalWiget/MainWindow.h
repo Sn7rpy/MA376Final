@@ -3,6 +3,7 @@
 #include <QtWidgets/QMainWindow>
 #include "ui_MainWindow.h"
 #include "NodeItem.h"
+#include "edgeItem.h"
 #include <QFile>
 
 

@@ -8,6 +8,7 @@
 #include <QGroupBox>
 #include <QRadioButton>
 #include <QVBoxLayout>
+#include <QInputDialog>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent),
@@ -68,23 +69,55 @@ void MainWindow::addNodesFromPoints(const std::vector<QPointF>& points)
 
         connect(node, &NodeItem::nodeClicked, this, [=](NodeItem* clickedNode) {
             if (!firstSelected) {
-                clickedNode->setPen(highlightPen);
                 firstSelected = clickedNode;
+                firstSelected->setPen(highlightPen);
+                if (state == WindowState::NameNode) {
+                    bool ok;
+                    QString inputText;
+                    if (firstSelected->index != "") {
+                        QString inputTitle("Rename Node");
+                    }
+                    else {
+                        QString inputTitle("Name Node");
+                    }
+                    QString newIndex = QInputDialog::getText(this, inputText, "Name:", QLineEdit::Normal, firstSelected->getIndex(),&ok);
+
+                    if (ok && !newIndex.isEmpty()) {
+                        firstSelected->setIndex(newIndex);
+                        firstSelected->setPen(defaultPen);
+                        firstSelected = nullptr;
+                    }
+
+                }
             }
             else if (firstSelected != clickedNode) {
-                QLineF line(firstSelected->scenePos(), clickedNode->scenePos());
+                if (state == WindowState::DrawEdges){
+                    QLineF line(firstSelected->scenePos(), clickedNode->scenePos());
+                    //bool ok;
+
+                    //QString newIdx = QInputDialog::getText(this, "Name Edge", "Name:", QLineEdit::Normal, "", &ok);
+
+                    //if (ok && !newIdx.isEmpty()) {
+                    //    line.setIndex(newIdx);
+                    //}
                 
-                if (std::find(linesVct.begin(), linesVct.end(), line) == linesVct.end()) {
-                    scene->addLine(line, QPen(Qt::blue, 2));
-                    linesVct.push_back(line);
-                    firstSelected->setPen(defaultPen);
-                    firstSelected = clickedNode;
-                    firstSelected->setPen(highlightPen);
+                    if (std::find(linesVct.begin(), linesVct.end(), line) == linesVct.end()) {
+                        scene->addLine(line, QPen(Qt::blue, 2));
+                        linesVct.push_back(line);
+                        firstSelected->setPen(defaultPen);
+                        firstSelected = clickedNode;
+                        firstSelected->setPen(highlightPen);
+                    }
+                    else {
+                        firstSelected->setPen(defaultPen);
+                        firstSelected = nullptr;
+                    }
                 }
-                else {
+                else if(state == WindowState::NameNode){
                     firstSelected->setPen(defaultPen);
                     firstSelected = nullptr;
                 }
+                
                 
             }
             else {

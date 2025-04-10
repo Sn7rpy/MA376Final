@@ -12,7 +12,11 @@ class edgeItem : public QObject, public QLineF
 
 public:
 	edgeItem(const QPointF& outNode, const QPointF& inNode);
-	char index;
+	QString index;
 	int weight;
+	QPointF outNd,inNd;
+	void setWeight(int& newValue);
+	void setIndex(QString& idx);
+	
 };
 

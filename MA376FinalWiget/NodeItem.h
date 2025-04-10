@@ -11,7 +11,11 @@ class NodeItem : public QObject, public QGraphicsEllipseItem
 	Q_OBJECT
 public:
 	NodeItem(const QPointF& pos, qreal radius = 5.0, const QBrush& color = Qt::red);
-	char index;
+	QString index;
+	QGraphicsTextItem* label = nullptr;
+
+	void setIndex(const QString& newValue);
+	QString getIndex();
 
 signals:
 	void nodeClicked(NodeItem* self);
