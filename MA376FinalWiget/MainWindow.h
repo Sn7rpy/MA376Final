@@ -25,11 +25,14 @@ class MainWindow : public QMainWindow
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
+    
+    std::vector<EdgeItem*> edgesVct;
+    std::vector<NodeItem*> nodesVct;
 
     void addNodesFromPoints(const std::vector<QPointF>& points);
     void resizeToImg(const QSizeF& size);
     void setBackgroundImg(const QString& filepath);
-    std::vector<EdgeItem*> edgesVct;
+    void loadNodesFromFile(const QString& fileName = "nodes.dat");
     void loadLinesFromFile(const QString& fileName="lines.dat");
 
 
@@ -37,7 +40,7 @@ public:
     ~MainWindow();
 
 private slots:
-    void saveLinesToFile();
+    void saveFeaturesToFile();
     void onEdgeClicked(EdgeItem* edge);
 
 private:

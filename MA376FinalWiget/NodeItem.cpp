@@ -6,6 +6,7 @@ NodeItem::NodeItem(const QPointF& pos, qreal radius, const QBrush& color)
 	:QGraphicsEllipseItem(-radius, -radius, 2 * radius, 2 * radius) {
 
 	index = "";
+	point = pos;
 	setPos(pos);
 	setBrush(color);
 	setPen(QPen(Qt::black, 1));
@@ -31,6 +32,11 @@ void NodeItem::setIndex(const QString& newValue)
 QString NodeItem::getIndex()
 {
 	return index;
+}
+
+QPointF NodeItem::getPoint()
+{
+	return point;
 }
 
 void NodeItem::mousePressEvent(QGraphicsSceneMouseEvent* event) {

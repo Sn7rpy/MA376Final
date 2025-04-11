@@ -7,19 +7,25 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     MainWindow w;
 
-    QString filePath = "C:\\Users\\Diego\\Downloads\\sateliteNodes.png";
-    QString outPath = "C:\\Users\\Diego\\Downloads\\sateliteBW.png";
-    QString linesPath = "lines.dat";
+    QString filePath = "sateliteNodes.png";
+    QString outPath = "sateliteBW.png";
+    QString edgesPath = "edges.dat";
+    QString nodesPath = "nodes.dat";
     QImage bwImg = processessGraphImg(filePath);
-    bwImg.save(outPath);
-    std::vector<QPointF> cntrList = findNodes(bwImg);
+    if (QFile::exists(nodesPath)) {
+        w.loadNodesFromFile(nodesPath);
+    }
+    else {
+        bwImg.save(outPath);
+        std::vector<QPointF> cntrList = findNodes(bwImg);
+        w.addNodesFromPoints(cntrList);
+    }
 
-    w.addNodesFromPoints(cntrList);
     w.resizeToImg(bwImg.size());
     w.setBackgroundImg(filePath);
-    if (QFile::exists(linesPath)) {
+    if (QFile::exists(edgesPath)) {
         //std::cout << "loading lines";
-        w.loadLinesFromFile(linesPath);
+        w.loadLinesFromFile(edgesPath);
     }
 
     w.show();

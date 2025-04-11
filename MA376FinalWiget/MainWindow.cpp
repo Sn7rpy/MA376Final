@@ -26,7 +26,7 @@ MainWindow::MainWindow(QWidget *parent)
     saveButton->move(10, 15);
     saveButton->resize(100, 30);
 
-    connect(saveButton, &QPushButton::clicked, this, &MainWindow::saveLinesToFile);
+    connect(saveButton, &QPushButton::clicked, this, &MainWindow::saveFeaturesToFile);
     
     QGroupBox* modeGroup = new QGroupBox("Mode", this);
     modeGroup->move(1300, 15);
@@ -60,12 +60,13 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::addNodesFromPoints(const std::vector<QPointF>& points)
 {
+    QPen highlightPen(Qt::white, 2);
+    QPen defaultPen(Qt::black, 1);
+
     for (const QPointF& pt : points) {
         NodeItem* node = new NodeItem(pt);
+        nodesVct.push_back(node);
         scene->addItem(node);
-
-        QPen highlightPen(Qt::white, 2);
-        QPen defaultPen(Qt::black, 1);
 
         connect(node, &NodeItem::nodeClicked, this, [=](NodeItem* clickedNode) {
             if (!firstSelected) {
@@ -139,17 +140,110 @@ void MainWindow::setBackgroundImg(const QString& filepath) {
     bgItem->setPos(0, 0);
 }
 
-void MainWindow::saveLinesToFile() {
-    QFile file("lines.dat");
-    file.open(QIODeviceBase::WriteOnly);
+void MainWindow::loadNodesFromFile(const QString& fileName)
+{
+    QPen highlightPen(Qt::white, 2);
+    QPen defaultPen(Qt::black, 1);
 
-    QDataStream out(&file);
+    QFile file(fileName);
+    file.open(QIODeviceBase::ReadOnly);
+
+    QDataStream in(&file);
+    quint32 count = 0;
+    in >> count;
+
+    for (quint32 i = 0; i < count; i++) {
+        QPointF point;
+        QString index;
+        in >> point;
+        in >> index;
+
+        NodeItem* node = new NodeItem(point);
+        scene->addItem(node);
+        node->setIndex(index);
+        connect(node, &NodeItem::nodeClicked, this, [=](NodeItem* clickedNode) {
+            if (!firstSelected) {
+                firstSelected = clickedNode;
+                firstSelected->setPen(highlightPen);
+                if (state == WindowState::ChangeIndicies) {
+                    bool ok;
+                    QString inputText;
+                    if (firstSelected->index != "") {
+                        QString inputTitle("Rename Node");
+                    }
+                    else {
+                        QString inputTitle("Name Node");
+                    }
+                    QString newIndex = QInputDialog::getText(this, inputText, "Name:", QLineEdit::Normal, firstSelected->getIndex(), &ok);
+
+                    if (ok && !newIndex.isEmpty()) {
+                        firstSelected->setIndex(newIndex);
+                        firstSelected->setPen(defaultPen);
+                        firstSelected = nullptr;
+                    }
+
+                }
+            }
+            else if (firstSelected != clickedNode) {
+                if (state == WindowState::DrawEdges) {
+                    EdgeItem* edge = new EdgeItem(QLineF(firstSelected->scenePos(), clickedNode->scenePos()));
+
+
+                    if (std::find(edgesVct.begin(), edgesVct.end(), edge) == edgesVct.end()) {
+                        scene->addItem(edge);
+                        connect(edge, &EdgeItem::edgeClicked, this, &MainWindow::onEdgeClicked);
+                        edgesVct.push_back(edge);
+                        firstSelected->setPen(defaultPen);
+                        firstSelected = clickedNode;
+                        firstSelected->setPen(highlightPen);
+                    }
+                    else {
+                        firstSelected->setPen(defaultPen);
+                        firstSelected = nullptr;
+                    }
+                }
+                else if (state == WindowState::ChangeIndicies) {
+                    firstSelected->setPen(defaultPen);
+                    firstSelected = nullptr;
+                }
+
+
+            }
+            else {
+                firstSelected->setPen(defaultPen);
+                firstSelected = nullptr;
+            }
+
+            });
+        nodesVct.push_back(node);
+
+    }
+
+    file.close();
+}
+
+void MainWindow::saveFeaturesToFile() {
+    QFile edgeFile("lines.dat");
+    edgeFile.open(QIODeviceBase::WriteOnly);
+
+    QDataStream out(&edgeFile);
     out << static_cast<quint32>(edgesVct.size());
     for (EdgeItem* edge : edgesVct) {
         out << edge->getLine();
         out << edge->getIndex();
     }
-    file.close();
+    edgeFile.close();
+
+    QFile nodeFile("lines.dat");
+    nodeFile.open(QIODeviceBase::WriteOnly);
+
+    QDataStream out(&nodeFile);
+    out << static_cast<quint32>(nodesVct.size());
+    for (NodeItem* node : nodesVct) {
+        out << node->getPoint();
+        out << node->getIndex();
+    }
+    nodeFile.close();
 }
 
 void MainWindow::loadLinesFromFile(const QString& fileName) {
