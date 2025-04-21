@@ -5,6 +5,7 @@
 #include "NodeItem.h"
 #include "EdgeItem.h"
 #include <QFile>
+#include "connStruct.h"
 
 
 QT_BEGIN_NAMESPACE
@@ -26,8 +27,10 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     
-    std::vector<EdgeItem*> edgesVct;
-    std::vector<NodeItem*> nodesVct;
+    QHash<uint, EdgeItem*> edgesMap;
+    QHash<uint, NodeItem*> nodesMap;
+    //stores the hash of the origin node as the key and a list of the hashes of the out nodes in a vector
+    QMultiHash<uint, connStruct> connections;
 
     void addNodesFromPoints(const std::vector<QPointF>& points);
     void resizeToImg(const QSizeF& size);

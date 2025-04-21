@@ -22,7 +22,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->graphicsView->setRenderHint(QPainter::Antialiasing);
     ui->graphicsView->setDragMode(QGraphicsView::RubberBandDrag);
 
-    QPushButton* saveButton = new QPushButton("Save Lines", this);
+    QPushButton* saveButton = new QPushButton("Save Graph", this); 
     saveButton->move(10, 15);
     saveButton->resize(100, 30);
 
@@ -65,7 +65,7 @@ void MainWindow::addNodesFromPoints(const std::vector<QPointF>& points)
 
     for (const QPointF& pt : points) {
         NodeItem* node = new NodeItem(pt);
-        nodesVct.push_back(node);
+        nodesMap.insert(node->getHash(), node);
         scene->addItem(node);
 
         connect(node, &NodeItem::nodeClicked, this, [=](NodeItem* clickedNode) {
@@ -96,10 +96,19 @@ void MainWindow::addNodesFromPoints(const std::vector<QPointF>& points)
                     EdgeItem* edge = new EdgeItem(QLineF(firstSelected->scenePos(), clickedNode->scenePos()));
                     
                 
-                    if (std::find(edgesVct.begin(), edgesVct.end(), edge) == edgesVct.end()) {
+                    if (edgesMap.contains(edge->getHash())) {
                         scene->addItem(edge);
                         connect(edge, &EdgeItem::edgeClicked, this, &MainWindow::onEdgeClicked);
-                        edgesVct.push_back(edge);
+                        edgesMap.insert(edge->getHash(), edge);
+
+                        connections.insert(firstSelected->getHash(),
+                            {edge->getHash(),clickedNode->getHash(),0}
+                        );
+
+                        connections.insert(clickedNode->getHash(),
+                            {edge->getHash(), firstSelected->getHash(),1}
+                        );
+
                         firstSelected->setPen(defaultPen);
                         firstSelected = clickedNode;
                         firstSelected->setPen(highlightPen);
@@ -159,6 +168,7 @@ void MainWindow::loadNodesFromFile(const QString& fileName)
         in >> index;
 
         NodeItem* node = new NodeItem(point);
+
         scene->addItem(node);
         node->setIndex(index);
         connect(node, &NodeItem::nodeClicked, this, [=](NodeItem* clickedNode) {
@@ -189,10 +199,19 @@ void MainWindow::loadNodesFromFile(const QString& fileName)
                     EdgeItem* edge = new EdgeItem(QLineF(firstSelected->scenePos(), clickedNode->scenePos()));
 
 
-                    if (std::find(edgesVct.begin(), edgesVct.end(), edge) == edgesVct.end()) {
+                    if (edgesMap.contains(edge->getHash())) {
                         scene->addItem(edge);
                         connect(edge, &EdgeItem::edgeClicked, this, &MainWindow::onEdgeClicked);
-                        edgesVct.push_back(edge);
+                        edgesMap.insert(edge->getHash(), edge);
+                        
+                        connections.insert(firstSelected->getHash(),
+                            { edge->getHash(),clickedNode->getHash(),0 }
+                        );
+
+                        connections.insert(clickedNode->getHash(),
+                            { edge->getHash(), firstSelected->getHash(),1 }
+                        );
+
                         firstSelected->setPen(defaultPen);
                         firstSelected = clickedNode;
                         firstSelected->setPen(highlightPen);
@@ -215,7 +234,7 @@ void MainWindow::loadNodesFromFile(const QString& fileName)
             }
 
             });
-        nodesVct.push_back(node);
+        nodesMap.insert(node->getHash(),node);
 
     }
 
@@ -223,25 +242,25 @@ void MainWindow::loadNodesFromFile(const QString& fileName)
 }
 
 void MainWindow::saveFeaturesToFile() {
-    QFile edgeFile("lines.dat");
+    QFile edgeFile("edges.dat");
     edgeFile.open(QIODeviceBase::WriteOnly);
 
     QDataStream out(&edgeFile);
-    out << static_cast<quint32>(edgesVct.size());
-    for (EdgeItem* edge : edgesVct) {
+    out << static_cast<quint32>(edgesMap.size());
+    for (EdgeItem* edge : edgesMap.values()) {
         out << edge->getLine();
         out << edge->getIndex();
     }
     edgeFile.close();
 
-    QFile nodeFile("lines.dat");
+    QFile nodeFile("nodes.dat");
     nodeFile.open(QIODeviceBase::WriteOnly);
 
-    QDataStream out(&nodeFile);
-    out << static_cast<quint32>(nodesVct.size());
-    for (NodeItem* node : nodesVct) {
-        out << node->getPoint();
-        out << node->getIndex();
+    QDataStream out2(&nodeFile);
+    out2 << static_cast<quint32>(nodesMap.size());
+    for (NodeItem* node : nodesMap.values()) {
+        out2 << node->getPoint();
+        out2 << node->getIndex();
     }
     nodeFile.close();
 }
@@ -263,7 +282,13 @@ void MainWindow::loadLinesFromFile(const QString& fileName) {
         EdgeItem* edge = new EdgeItem(line, index);
         scene->addItem(edge);
         connect(edge, &EdgeItem::edgeClicked, this, &MainWindow::onEdgeClicked);
-        edgesVct.push_back(edge);
+        edgesMap.insert(edge->getHash(),edge);
+        connections.insert(edge->getHashP1(),
+            { edge->getHash(), edge->getHashP2(),0 }
+        );
+        connections.insert(edge->getHashP2(), 
+            { edge->getHash(), edge->getHashP1(), 1 }
+        );
 
     }
 

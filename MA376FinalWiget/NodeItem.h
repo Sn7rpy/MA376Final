@@ -5,6 +5,7 @@
 #include <QBrush>
 #include <QPen>
 #include <QColor>
+#include <tuple>
 
 class NodeItem : public QObject, public QGraphicsEllipseItem
 {
@@ -14,10 +15,13 @@ public:
 	QString index;
 	QPointF point;
 	QGraphicsTextItem* label = nullptr;
+	uint hash;
+	//std::vector<std::tuple<NodeItem*,EdgeItem*>> outEdges;
 
 	void setIndex(const QString& newValue);
 	QString getIndex();
 	QPointF getPoint();
+	uint getHash();
 
 signals:
 	void nodeClicked(NodeItem* self);

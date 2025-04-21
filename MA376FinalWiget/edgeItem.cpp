@@ -6,8 +6,17 @@
 EdgeItem::EdgeItem(const QLineF& line, const QString& idx, QGraphicsItem* parent) : QGraphicsLineItem(line,parent)
 {
 	index = idx;
-	weight = 0;
+	weightForw,weightBack = 0;
 	lineC = line;
+
+	hashP1 = qHash(QPair<qreal, qreal>(
+		lineC.p1().x(), lineC.p1().y()
+	));
+	hashP2 = qHash(QPair<qreal, qreal>(
+		lineC.p2().x(), lineC.p2().y()
+	));
+
+	hash = qHash(QPair<uint,uint>(hashP1,hashP2));
 
 	
 	setPen(QPen(Qt::blue, 2));
@@ -21,6 +30,18 @@ EdgeItem::EdgeItem(const QLineF& line, const QString& idx, QGraphicsItem* parent
 	font.setItalic(true);
 	label->setFont(font);
 	label->setPos(line.center());
+
+	arrow = new QGraphicsPolygonItem(this);
+	arrow->setBrush(Qt::blue);
+
+	arrowSize = 10.0;
+	triangle << QPointF(0, 0) 
+		<< QPointF(-arrowSize, arrowSize / 2) 
+		<< QPointF(-arrowSize, -arrowSize / 2);
+	arrow->setPolygon(triangle);
+	arrow->setPos(lineC.center());
+	arrow->setRotation(lineC.angleTo(QLine(QPoint(0,0),QPoint(1,0))));
+
 }
 
 void EdgeItem::setWeight(int& newValue)
@@ -42,6 +63,31 @@ QString EdgeItem::getIndex()
 QLineF EdgeItem::getLine()
 {
 	return lineC;
+}
+
+uint EdgeItem::getHash()
+{
+	return hash;
+}
+
+uint EdgeItem::getHashP1()
+{
+	return hashP1;
+}
+
+uint EdgeItem::getHashP2()
+{
+	return hashP2;
+}
+
+int EdgeItem::getWeight(bool direction)
+{
+	if (direction) {
+		return weightBack;
+	}
+	else {
+		return weightForw;
+	}
 }
 
 void EdgeItem::mousePressEvent(QGraphicsSceneMouseEvent* event)

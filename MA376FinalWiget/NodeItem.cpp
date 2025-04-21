@@ -1,5 +1,6 @@
 #include "NodeItem.h"
 #include <QFont>
+#include <QHash>
 
 
 NodeItem::NodeItem(const QPointF& pos, qreal radius, const QBrush& color)
@@ -7,6 +8,8 @@ NodeItem::NodeItem(const QPointF& pos, qreal radius, const QBrush& color)
 
 	index = "";
 	point = pos;
+	hash = qHash(QPair<qreal, qreal>(point.x(), point.y()));
+
 	setPos(pos);
 	setBrush(color);
 	setPen(QPen(Qt::black, 1));
@@ -37,6 +40,11 @@ QString NodeItem::getIndex()
 QPointF NodeItem::getPoint()
 {
 	return point;
+}
+
+uint NodeItem::getHash()
+{
+	return hash;
 }
 
 void NodeItem::mousePressEvent(QGraphicsSceneMouseEvent* event) {
