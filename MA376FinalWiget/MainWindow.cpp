@@ -6,312 +6,464 @@
 #include <QDataStream>
 #include <QDebug>
 #include <QGroupBox>
-#include <QRadioButton>
 #include <QVBoxLayout>
 #include <QInputDialog>
+#include <QFileDialog>
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent),
-    ui(new Ui::MainWindowClass)
+	: QMainWindow(parent),
+	ui(new Ui::MainWindowClass)
 {
-    ui->setupUi(this);
+	ui->setupUi(this);
 
-    MainWindow::scene = new QGraphicsScene(this);
-    ui->graphicsView->setScene(scene);
+	MainWindow::scene = new QGraphicsScene(this);
+	ui->graphicsView->setScene(scene);
 
-    ui->graphicsView->setRenderHint(QPainter::Antialiasing);
-    ui->graphicsView->setDragMode(QGraphicsView::RubberBandDrag);
+	ui->graphicsView->setRenderHint(QPainter::Antialiasing);
+	ui->graphicsView->setDragMode(QGraphicsView::RubberBandDrag);
 
-    QPushButton* saveButton = new QPushButton("Save Graph", this); 
-    saveButton->move(10, 15);
-    saveButton->resize(100, 30);
+	QPushButton* saveButton = new QPushButton("Save Graph", this); 
+	saveButton->move(10, 15);
+	saveButton->resize(100, 30);
 
-    connect(saveButton, &QPushButton::clicked, this, &MainWindow::saveFeaturesToFile);
-    
-    QGroupBox* modeGroup = new QGroupBox("Mode", this);
-    modeGroup->move(1300, 15);
-    modeGroup->resize(150, 70);
+	connect(saveButton, &QPushButton::clicked, this, &MainWindow::saveFeaturesToFile);
 
-    QRadioButton* drawEdgeBtn = new QRadioButton("Draw Edges", modeGroup);
-    QRadioButton* changeIndexesBtn = new QRadioButton("Change Indicies", modeGroup);
+	QPushButton* loadButton = new QPushButton("Load Weights", this);
+	loadButton->move(120, 15);
+	loadButton->resize(100, 30);
 
-    QVBoxLayout* vbox = new QVBoxLayout;
-    vbox->addWidget(drawEdgeBtn);
-    vbox->addWidget(changeIndexesBtn);
-    vbox->addStretch(1);
-    modeGroup->setLayout(vbox);
+	connect(loadButton, &QPushButton::clicked, this, &MainWindow::loadWeights);
 
-    drawEdgeBtn->setChecked(true);
-    state = WindowState::DrawEdges;
+	QPushButton* djkButton = new QPushButton("Run Dijkstra's", this);
+	djkButton->move(10, 740);
+	djkButton->resize(100, 30);
 
-    connect(drawEdgeBtn, &QRadioButton::toggled, this, [=](bool checked) {
-        if (checked) {
-            state = WindowState::DrawEdges;
-        }
-        });
+	connect(djkButton, &QPushButton::clicked, this, &MainWindow::runDA);
+	
+	QGroupBox* modeGroup = new QGroupBox("Mode", this);
+	modeGroup->move(1300, 15);
+	modeGroup->resize(200, 100);
 
-    connect(changeIndexesBtn, &QRadioButton::toggled, this, [=](bool checked) {
-        if (checked) {
-            state = WindowState::ChangeIndicies;
-        }
-        });
+	drawEdgeBtn = new QRadioButton("Draw Edges", modeGroup);
+	changeIndexesBtn = new QRadioButton("Change Indicies", modeGroup);
+	dijktraBtn = new QRadioButton("Run Dijkstra's Algorithm", modeGroup);
 
-}
+	QVBoxLayout* vbox = new QVBoxLayout;
+	vbox->addWidget(drawEdgeBtn);
+	vbox->addWidget(changeIndexesBtn);
+	vbox->addWidget(dijktraBtn);
+	vbox->addStretch(1);
+	modeGroup->setLayout(vbox);
 
-void MainWindow::addNodesFromPoints(const std::vector<QPointF>& points)
-{
-    QPen highlightPen(Qt::white, 2);
-    QPen defaultPen(Qt::black, 1);
+	drawEdgeBtn->setChecked(true);
+	state = WindowState::DrawEdges;
 
-    for (const QPointF& pt : points) {
-        NodeItem* node = new NodeItem(pt);
-        nodesMap.insert(node->getHash(), node);
-        scene->addItem(node);
 
-        connect(node, &NodeItem::nodeClicked, this, [=](NodeItem* clickedNode) {
-            if (!firstSelected) {
-                firstSelected = clickedNode;
-                firstSelected->setPen(highlightPen);
-                if (state == WindowState::ChangeIndicies) {
-                    bool ok;
-                    QString inputText;
-                    if (firstSelected->index != "") {
-                        QString inputTitle("Rename Node");
-                    }
-                    else {
-                        QString inputTitle("Name Node");
-                    }
-                    QString newIndex = QInputDialog::getText(this, inputText, "Name:", QLineEdit::Normal, firstSelected->getIndex(),&ok);
+	connect(drawEdgeBtn, &QRadioButton::toggled, this, [=](bool checked) {
+		if (checked) {
+			state = WindowState::DrawEdges;
+		}
+		});
 
-                    if (ok && !newIndex.isEmpty()) {
-                        firstSelected->setIndex(newIndex);
-                        firstSelected->setPen(defaultPen);
-                        firstSelected = nullptr;
-                    }
+	connect(changeIndexesBtn, &QRadioButton::toggled, this, [=](bool checked) {
+		if (checked) {
+			state = WindowState::ChangeIndicies;
+		}
+		});
 
-                }
-            }
-            else if (firstSelected != clickedNode) {
-                if (state == WindowState::DrawEdges){
-                    EdgeItem* edge = new EdgeItem(QLineF(firstSelected->scenePos(), clickedNode->scenePos()));
-                    
-                
-                    if (edgesMap.contains(edge->getHash())) {
-                        scene->addItem(edge);
-                        connect(edge, &EdgeItem::edgeClicked, this, &MainWindow::onEdgeClicked);
-                        edgesMap.insert(edge->getHash(), edge);
+	connect(dijktraBtn, &QRadioButton::toggled, this, [=](bool checked) {
+		if (checked) {
+			state = WindowState::DijkstraMode;
+		}
+		});
 
-                        connections.insert(firstSelected->getHash(),
-                            {edge->getHash(),clickedNode->getHash(),0}
-                        );
-
-                        connections.insert(clickedNode->getHash(),
-                            {edge->getHash(), firstSelected->getHash(),1}
-                        );
-
-                        firstSelected->setPen(defaultPen);
-                        firstSelected = clickedNode;
-                        firstSelected->setPen(highlightPen);
-                    }
-                    else {
-                        firstSelected->setPen(defaultPen);
-                        firstSelected = nullptr;
-                    }
-                }
-                else if(state == WindowState::ChangeIndicies){
-                    firstSelected->setPen(defaultPen);
-                    firstSelected = nullptr;
-                }
-                
-                
-            }
-            else {
-                firstSelected->setPen(defaultPen);
-                firstSelected = nullptr;
-            }
-            
-            });
-    }
-
-    
+	edgesFile = "edges.dat";
+	nodesFile = "nodes.dat";
 
 }
 
 void MainWindow::resizeToImg(const QSizeF& size) {
-    ui->graphicsView->setSceneRect(QRectF(QPointF(0,0),size));
-    //ui->graphicsView->resize(size.width(), size.height());
+	ui->graphicsView->setSceneRect(QRectF(QPointF(0, 0), size));
+	//ui->graphicsView->resize(size.width(), size.height());
 
 }
+
 void MainWindow::setBackgroundImg(const QString& filepath) {
-    QPixmap bg(filepath);
-    QGraphicsPixmapItem* bgItem = scene->addPixmap(bg);
-    bgItem->setZValue(-1000);
-    bgItem->setPos(0, 0);
+	QPixmap bg(filepath);
+	QGraphicsPixmapItem* bgItem = scene->addPixmap(bg);
+	bgItem->setZValue(-1000);
+	bgItem->setPos(0, 0);
+}
+
+void MainWindow::promptIndexChange()
+{
+	bool ok;
+	QString inputText;
+	if (firstSelected->index != "") {
+		QString inputTitle("Rename Node");
+	}
+	else {
+		QString inputTitle("Name Node");
+	}
+	QString newIndex = QInputDialog::getText(this, inputText, "Name:", QLineEdit::Normal, firstSelected->getIndex(), &ok);
+
+	if (ok && !newIndex.isEmpty()) {
+		firstSelected->setIndex(newIndex);
+	}
+}
+
+void MainWindow::handleClickedNode(NodeItem* clickedNode) {
+
+	QPen highlightPen(Qt::white, 2);
+	QPen defaultPen(Qt::black, 1);
+
+	if (!firstSelected) {
+		firstSelected = clickedNode;
+		firstSelected->setPen(highlightPen);
+		if (state == WindowState::ChangeIndicies) {
+			promptIndexChange();
+			firstSelected->setPen(defaultPen);
+			firstSelected = nullptr;
+
+		}
+		else if (state == WindowState::DijkstraMode) {
+			dijOutput u = dijkstraResult.value(firstSelected->getHash());
+			while (u.predecesor.predNode != NULL) {
+				EdgeItem* edge = edgesMap.value(u.predecesor.predEdge);
+				edge->setPen(QPen(Qt::green,3));
+				u = dijkstraResult.value(u.predecesor.predNode);
+
+			}
+
+			//firstSelected->setPen(defaultPen);
+			//firstSelected = nullptr;
+		}
+	}
+	else if (firstSelected != clickedNode) {
+		if (state == WindowState::DrawEdges) {
+			EdgeItem* edge = new EdgeItem(QLineF(firstSelected->scenePos(), clickedNode->scenePos()));
+
+
+			if (!edgesMap.contains(edge->getHash())) {
+				scene->addItem(edge);
+				connect(edge, &EdgeItem::edgeClicked, this, &MainWindow::onEdgeClicked);
+				edgesMap.insert(edge->getHash(), edge);
+
+				connections.insert(firstSelected->getHash(),
+					{ edge->getHash(),clickedNode->getHash(),0 }
+				);
+
+				connections.insert(clickedNode->getHash(),
+					{ edge->getHash(), firstSelected->getHash(),1 }
+				);
+
+				firstSelected->setPen(defaultPen);
+				firstSelected = clickedNode;
+				firstSelected->setPen(highlightPen);
+			}
+			else {
+				firstSelected->setPen(defaultPen);
+				firstSelected = nullptr;
+			}
+		}
+		else if (state == WindowState::ChangeIndicies) {
+			firstSelected->setPen(defaultPen);
+			firstSelected = nullptr;
+		}
+
+
+	}
+	else {
+		firstSelected->setPen(defaultPen);
+		firstSelected = nullptr;
+	}
+}
+
+void MainWindow::addNodesFromPoints(const std::vector<QPointF>& points)
+{
+
+	for (const QPointF& pt : points) {
+		NodeItem* node = new NodeItem(pt);
+		nodesMap.insert(node->getHash(), node);
+		scene->addItem(node);
+
+		connect(node, &NodeItem::nodeClicked, this, [=](NodeItem* clickedNode) {
+			handleClickedNode(clickedNode);
+			});
+	}
+
+	
+
 }
 
 void MainWindow::loadNodesFromFile(const QString& fileName)
 {
-    QPen highlightPen(Qt::white, 2);
-    QPen defaultPen(Qt::black, 1);
+	QPen highlightPen(Qt::white, 2);
+	QPen defaultPen(Qt::black, 1);
 
-    QFile file(fileName);
-    file.open(QIODeviceBase::ReadOnly);
+	QFile file(fileName);
+	file.open(QIODeviceBase::ReadOnly);
 
-    QDataStream in(&file);
-    quint32 count = 0;
-    in >> count;
+	QDataStream in(&file);
+	quint32 count = 0;
+	in >> count;
 
-    for (quint32 i = 0; i < count; i++) {
-        QPointF point;
-        QString index;
-        in >> point;
-        in >> index;
+	for (quint32 i = 0; i < count; i++) {
+		QPointF point;
+		QString index;
+		in >> point;
+		in >> index;
 
-        NodeItem* node = new NodeItem(point);
+		NodeItem* node = new NodeItem(point);
 
-        scene->addItem(node);
-        node->setIndex(index);
-        connect(node, &NodeItem::nodeClicked, this, [=](NodeItem* clickedNode) {
-            if (!firstSelected) {
-                firstSelected = clickedNode;
-                firstSelected->setPen(highlightPen);
-                if (state == WindowState::ChangeIndicies) {
-                    bool ok;
-                    QString inputText;
-                    if (firstSelected->index != "") {
-                        QString inputTitle("Rename Node");
-                    }
-                    else {
-                        QString inputTitle("Name Node");
-                    }
-                    QString newIndex = QInputDialog::getText(this, inputText, "Name:", QLineEdit::Normal, firstSelected->getIndex(), &ok);
+		scene->addItem(node);
+		node->setIndex(index);
+		connect(node, &NodeItem::nodeClicked, this, [=](NodeItem* clickedNode) {
+			handleClickedNode(clickedNode);
+			});
+		nodesMap.insert(node->getHash(),node);
 
-                    if (ok && !newIndex.isEmpty()) {
-                        firstSelected->setIndex(newIndex);
-                        firstSelected->setPen(defaultPen);
-                        firstSelected = nullptr;
-                    }
+	}
 
-                }
-            }
-            else if (firstSelected != clickedNode) {
-                if (state == WindowState::DrawEdges) {
-                    EdgeItem* edge = new EdgeItem(QLineF(firstSelected->scenePos(), clickedNode->scenePos()));
-
-
-                    if (edgesMap.contains(edge->getHash())) {
-                        scene->addItem(edge);
-                        connect(edge, &EdgeItem::edgeClicked, this, &MainWindow::onEdgeClicked);
-                        edgesMap.insert(edge->getHash(), edge);
-                        
-                        connections.insert(firstSelected->getHash(),
-                            { edge->getHash(),clickedNode->getHash(),0 }
-                        );
-
-                        connections.insert(clickedNode->getHash(),
-                            { edge->getHash(), firstSelected->getHash(),1 }
-                        );
-
-                        firstSelected->setPen(defaultPen);
-                        firstSelected = clickedNode;
-                        firstSelected->setPen(highlightPen);
-                    }
-                    else {
-                        firstSelected->setPen(defaultPen);
-                        firstSelected = nullptr;
-                    }
-                }
-                else if (state == WindowState::ChangeIndicies) {
-                    firstSelected->setPen(defaultPen);
-                    firstSelected = nullptr;
-                }
-
-
-            }
-            else {
-                firstSelected->setPen(defaultPen);
-                firstSelected = nullptr;
-            }
-
-            });
-        nodesMap.insert(node->getHash(),node);
-
-    }
-
-    file.close();
+	file.close();
 }
 
 void MainWindow::saveFeaturesToFile() {
-    QFile edgeFile("edges.dat");
-    edgeFile.open(QIODeviceBase::WriteOnly);
+	QFile edgeFile(edgesFile);
+	edgeFile.open(QIODeviceBase::WriteOnly);
 
-    QDataStream out(&edgeFile);
-    out << static_cast<quint32>(edgesMap.size());
-    for (EdgeItem* edge : edgesMap.values()) {
-        out << edge->getLine();
-        out << edge->getIndex();
-    }
-    edgeFile.close();
+	QDataStream out(&edgeFile);
+	out << static_cast<quint32>(edgesMap.size());
+	for (EdgeItem* edge : edgesMap.values()) {
+		out << edge->getLine();
+		out << edge->getIndex();
+	}
+	edgeFile.close();
 
-    QFile nodeFile("nodes.dat");
-    nodeFile.open(QIODeviceBase::WriteOnly);
+	QFile nodeFile(nodesFile);
+	nodeFile.open(QIODeviceBase::WriteOnly);
 
-    QDataStream out2(&nodeFile);
-    out2 << static_cast<quint32>(nodesMap.size());
-    for (NodeItem* node : nodesMap.values()) {
-        out2 << node->getPoint();
-        out2 << node->getIndex();
-    }
-    nodeFile.close();
+	QDataStream out2(&nodeFile);
+	out2 << static_cast<quint32>(nodesMap.size());
+	for (NodeItem* node : nodesMap.values()) {
+		out2 << node->getPoint();
+		out2 << node->getIndex();
+	}
+	nodeFile.close();
 }
 
 void MainWindow::loadLinesFromFile(const QString& fileName) {
-    QFile file(fileName);
-    file.open(QIODeviceBase::ReadOnly);
+	QFile file(fileName);
+	file.open(QIODeviceBase::ReadOnly);
 
-    QDataStream in(&file);
-    quint32 count = 0;
-    in >> count;
+	QDataStream in(&file);
+	quint32 count = 0;
+	in >> count;
 
-    for (quint32 i = 0; i < count; i++) {
-        QLineF line;
-        QString index;
-        in >> line;
-        in >> index;
+	for (quint32 i = 0; i < count; i++) {
+		QLineF line;
+		QString index;
+		in >> line;
+		in >> index;
 
-        EdgeItem* edge = new EdgeItem(line, index);
-        scene->addItem(edge);
-        connect(edge, &EdgeItem::edgeClicked, this, &MainWindow::onEdgeClicked);
-        edgesMap.insert(edge->getHash(),edge);
-        connections.insert(edge->getHashP1(),
-            { edge->getHash(), edge->getHashP2(),0 }
-        );
-        connections.insert(edge->getHashP2(), 
-            { edge->getHash(), edge->getHashP1(), 1 }
-        );
+		EdgeItem* edge = new EdgeItem(line, index);
+		scene->addItem(edge);
+		connect(edge, &EdgeItem::edgeClicked, this, &MainWindow::onEdgeClicked);
+		edgesMap.insert(edge->getHash(),edge);
+		if (index != "") {
+			edgeIndexes.insert(index, edge);
+		}
+		connections.insert(edge->getHashP1(),
+			{ edge->getHash(), edge->getHashP2(),0 }
+		);
+		connections.insert(edge->getHashP2(), 
+			{ edge->getHash(), edge->getHashP1(), 1 }
+		);
 
-    }
+	}
 
-    file.close();
+	file.close();
 
+}
+
+void MainWindow::setWeightsFromCSV(const QString& filepath)
+{
+	QFile csv(filepath);
+	csv.open(QIODevice::ReadOnly);
+
+	QTextStream in(&csv);
+	QString header = in.readLine();
+	while (!in.atEnd()) {
+		QString line = in.readLine();
+		QStringList cells = line.split(",");
+		QString index = cells[0].trimmed() + cells[1].trimmed();
+		weightStruct newWeights;
+
+		newWeights.timeForw = cells[2].trimmed().toInt();
+		newWeights.timeBack = cells[3].trimmed().toInt();
+		newWeights.scene = cells[4].trimmed().toInt();
+		newWeights.inside = cells[5].trimmed().toInt();
+		newWeights.cover = cells[6].trimmed().toInt();
+		newWeights.distance = cells[7].trimmed().toDouble();
+
+		if (edgeIndexes.contains(index)){ 
+			edgeIndexes.value(index)->setWeights(newWeights); }
+		else { continue; }
+		
+
+	}
+
+	csv.close();
+
+}
+
+void MainWindow::getNodeFile(const QString& fileName)
+{
+	nodesFile = fileName;
+}
+
+void MainWindow::getEdgeFile(const QString& fileName)
+{
+	edgesFile = fileName;
 }
 
 MainWindow::~MainWindow()
 {
-    delete ui;
+	delete ui;
 }
 
 void MainWindow::onEdgeClicked(EdgeItem* edge)
 {
-    if (state == WindowState::ChangeIndicies) {
-        bool ok;
+	if (state == WindowState::ChangeIndicies) {
+		bool ok;
 
-        QString newIdx = QInputDialog::getText(this, "Name Edge", "Name:", QLineEdit::Normal, edge->getIndex(), &ok);
+		QString newIdx = QInputDialog::getText(this, "Name Edge", "Name:", QLineEdit::Normal, edge->getIndex(), &ok);
 
-        if (ok && !newIdx.isEmpty()) {
-            edge->setIndex(newIdx);
-        }
-    }
+		if (ok && !newIdx.isEmpty()) {
+			edge->setIndex(newIdx);
+			edgeIndexes.insert(newIdx, edge);
+		}
+	}
+}
+
+void MainWindow::loadWeights()
+{
+	QStringList csvPathList = QFileDialog::getOpenFileNames(this, tr("Open CSV File"),__FILE__,"CSV files (*.csv)");
+
+	for (QString csvPath: csvPathList)
+	{
+		setWeightsFromCSV(csvPath);
+	}
+}
+
+QHash<size_t, dijOutput> MainWindow::runDijkstras(NodeItem* startNode) {
+	QHash<size_t, dijOutput> output;
+	QHash<size_t, predOut> preds;
+	QHash<size_t, double> yEdge;
+	QHash<size_t, bool> temp;
+	double pos_inf = std::numeric_limits<double>::infinity();
+
+	for (NodeItem* node : nodesMap.values()) {
+		size_t hash = node->getHash();
+		preds.insert(hash, {NULL, NULL});
+		yEdge.insert(hash, pos_inf);
+		temp.insert(hash, true);
+	}
+
+	size_t u = startNode->getHash();
+
+	yEdge[u] = 0;
+
+	while (u != NULL) {
+
+		for (const connStruct& connection : connections.values(u)) {
+			size_t j = connection.outNode;
+			if (!temp.contains(j)) {
+				continue;
+			}
+
+			EdgeItem* edge = edgesMap.value(connection.edge);
+			double edgeWeight = edge->getTimeWeight(connection.reverseDir);
+			double dPrime = yEdge.value(u) + edgeWeight;
+			if (dPrime < yEdge.value(j)) {
+				yEdge[j] = dPrime;
+				preds[j] = {u,edge->getHash()};
+			}
+
+		}
+		output.insert(u, { {preds.value(u),},yEdge.value(u) });
+		temp.remove(u);
+		if (temp.isEmpty()) {
+			break;
+		}
+		else { u = temp.key(true); }
+
+		for (size_t candidateV : temp.keys()) {
+			double yV = yEdge.value(candidateV);
+			if (yV < yEdge.value(u)) {
+				u = candidateV;
+			}
+		}
+		if (yEdge.value(u) == pos_inf) {
+			break;
+		}
+
+	}
+
+
+	return output;
+
+}
+
+std::vector<std::vector<double>> MainWindow::runFloydWar() {
+	std::vector<std::vector<double>> output;
+	return output;
+}
+
+void MainWindow::runDA()
+{
+	dijkstraResult = runDijkstras(firstSelected);
+	firstSelected->setBrush(Qt::yellow);
+	firstSelected->setPen(QPen(Qt::black, 1));
+	firstSelected = nullptr;
+	dijktraBtn->setChecked(true);
+	
+	QFile file("resulatsDA.txt");
+	file.open(QIODevice::WriteOnly);
+
+	QTextStream out(&file);
+
+	if (true) {
+		for (size_t nodeHash : dijkstraResult.keys()) {
+			dijOutput nodeResult = dijkstraResult.value(nodeHash);
+			if (nodeResult.predecesor.predNode == NULL) { continue; }
+			NodeItem* node = nodesMap.value(nodeHash);
+			NodeItem* predNode = nodesMap.value(nodeResult.predecesor.predNode);
+			EdgeItem* predEdge = edgesMap.value(nodeResult.predecesor.predEdge);
+			double cost = nodeResult.minPath;
+
+			out << "Node:" << node->getPoint().x() << "," << node->getPoint().y()
+				<< " | Pred:" << predNode->getPoint().x() << "," << predNode->getPoint().y()
+				<< " | Edge:" << predEdge->getIndex() << " | Cost:" << cost << "\n";
+
+		}
+	}else
+	{
+		for (dijOutput nodeResult : dijkstraResult.values()) {
+			if (edgesMap.contains(nodeResult.predecesor.predEdge))
+			{
+				EdgeItem* predEdge = edgesMap.value(nodeResult.predecesor.predEdge);
+				out << predEdge->getIndex() << " , " << nodeResult.minPath << "\n";
+			}
+			else {
+				out << nodeResult.predecesor.predEdge << " , " << nodeResult.minPath << "\n";
+			}
+		}
+	}
+
+	out << dijkstraResult.size();
+
+	file.close();
 }
 
 

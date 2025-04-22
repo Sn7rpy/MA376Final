@@ -6,8 +6,8 @@
 EdgeItem::EdgeItem(const QLineF& line, const QString& idx, QGraphicsItem* parent) : QGraphicsLineItem(line,parent)
 {
 	index = idx;
-	weightForw,weightBack = 0;
 	lineC = line;
+	weights = { 0,0,0,0,0,0 };
 
 	hashP1 = qHash(QPair<qreal, qreal>(
 		lineC.p1().x(), lineC.p1().y()
@@ -16,7 +16,7 @@ EdgeItem::EdgeItem(const QLineF& line, const QString& idx, QGraphicsItem* parent
 		lineC.p2().x(), lineC.p2().y()
 	));
 
-	hash = qHash(QPair<uint,uint>(hashP1,hashP2));
+	hash = qHash(QPair<size_t,size_t>(hashP1,hashP2));
 
 	
 	setPen(QPen(Qt::blue, 2));
@@ -44,9 +44,10 @@ EdgeItem::EdgeItem(const QLineF& line, const QString& idx, QGraphicsItem* parent
 
 }
 
-void EdgeItem::setWeight(int& newValue)
+void EdgeItem::setWeights(weightStruct& newValues)
 {
-	weight = newValue;
+	weights = newValues;
+	arrow->setBrush(Qt::green);
 }
 
 void EdgeItem::setIndex(QString& idx)
@@ -65,28 +66,28 @@ QLineF EdgeItem::getLine()
 	return lineC;
 }
 
-uint EdgeItem::getHash()
+size_t EdgeItem::getHash()
 {
 	return hash;
 }
 
-uint EdgeItem::getHashP1()
+size_t EdgeItem::getHashP1()
 {
 	return hashP1;
 }
 
-uint EdgeItem::getHashP2()
+size_t EdgeItem::getHashP2()
 {
 	return hashP2;
 }
 
-int EdgeItem::getWeight(bool direction)
+int EdgeItem::getTimeWeight(bool direction)
 {
 	if (direction) {
-		return weightBack;
+		return weights.timeBack;
 	}
 	else {
-		return weightForw;
+		return weights.timeForw;
 	}
 }
 

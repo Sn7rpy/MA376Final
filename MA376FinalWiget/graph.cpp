@@ -1,6 +1,6 @@
 #include "graph.h"
 #include <limits>
-#include "connStruct.h"
+
 
 
 QImage processessGraphImg(const QString& pathToImage) {
@@ -83,36 +83,4 @@ std::vector<QPointF> findNodes(QImage inputImg) {
 	return centers;
 }
 
-std::vector<std::tuple<std::string, std::string, double>> runDijkstras(NodeItem* startNode, QHash<uint,EdgeItem*> edgeMp, QHash<uint, NodeItem*> nodeMp, QMultiHash<uint,connStruct> connMp) {
-	std::vector<std::tuple<std::string, std::string, double>> output;
-	QHash<uint, uint> preds;
-	QHash<uint, double> yj;
-	QHash<uint, bool> temp;
-	double pos_inf = std::numeric_limits<double>::infinity();
-
-	for (NodeItem* node : nodeMp.values()) {
-		uint hash = node->getHash();
-		preds.insert(hash, NULL);
-		yj.insert(hash, pos_inf);
-		temp.insert(hash, true);
-	}
-
-	uint u = startNode->getHash();
-
-	yj[u] = 0;
-
-	while (u != NULL) {
-		for (connStruct connection : connMp.values(u)) {
-			EdgeItem* edge = edgeMp.value(connection.edge);
-			double edgeWeight = edge->getWeight(connection.reverseDir);
-			double dPrime = yj.value(u)+ edgeWeight;
-
-		}
-		break;
-	}
-
-
-	return output;
-
-}
 

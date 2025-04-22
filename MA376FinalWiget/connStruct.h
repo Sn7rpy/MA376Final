@@ -4,7 +4,7 @@
 
 struct connStruct
 {
-	uint edge;
-	uint outNode;
+	size_t edge;
+	size_t outNode;
 	bool reverseDir;
 };

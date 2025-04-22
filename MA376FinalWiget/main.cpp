@@ -7,11 +7,15 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     MainWindow w;
 
-    QString filePath = "sateliteNodes.png";
-    QString outPath = "sateliteBW.png";
-    QString edgesPath = "edges.dat";
-    QString nodesPath = "nodes.dat";
+    QString filePath = "graphJit.png";
+    QString outPath = "jitBW.png";
+    QString edgesPath = "edgesSample.dat";
+    QString nodesPath = "nodesSample.dat";
     QImage bwImg = processessGraphImg(filePath);
+
+    w.getEdgeFile(edgesPath);
+    w.getNodeFile(nodesPath);
+
     if (QFile::exists(nodesPath)) {
         w.loadNodesFromFile(nodesPath);
     }

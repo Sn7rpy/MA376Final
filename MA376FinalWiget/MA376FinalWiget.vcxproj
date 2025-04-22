@@ -106,6 +106,7 @@
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="EdgeItem.h" />
+    <ClInclude Include="connStruct.h" />
     <ClInclude Include="graph.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

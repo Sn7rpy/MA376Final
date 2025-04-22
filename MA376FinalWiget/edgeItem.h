@@ -8,6 +8,15 @@
 #include <QColor>
 #include <QGraphicsPolygonItem>
 
+struct weightStruct {
+	int timeForw;
+	int timeBack;
+	int scene;
+	bool inside;
+	bool cover;
+	double distance;
+};
+
 class EdgeItem : public QObject, public QGraphicsLineItem
 {
 	Q_OBJECT
@@ -23,23 +32,24 @@ public:
 
 
 	QString index;
-	int weightForw;
-	int weightBack;
+	
+	weightStruct weights;
+
 	QLineF lineC;
-	uint hash;
-	uint hashP1;
-	uint hashP2;
+	size_t hash;
+	size_t hashP1;
+	size_t hashP2;
 
 
-	void setWeight(int& newValue);
+	void setWeights(weightStruct& newValues);
 	void setIndex(QString& idx);
 	QString getIndex();
 	QLineF getLine();
-	uint getHash();
-	uint getHashP1();
-	uint getHashP2();
+	size_t getHash();
+	size_t getHashP1();
+	size_t getHashP2();
 
-	int getWeight(bool direction);
+	int getTimeWeight(bool direction);
 
 signals:
 	void edgeClicked(EdgeItem* edge);

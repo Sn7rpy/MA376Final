@@ -1,0 +1,5 @@
+zone,path number,time 1,time 2,scene rating,inside?,covered?,distance
+bc,1,34,33,3,1,1,0
+bc,2,9,9,3,1,1,0
+bc,3,12,12,3,1,1,0
+bc,4,9,9,2,1,1,0

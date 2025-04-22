@@ -42,7 +42,7 @@ QPointF NodeItem::getPoint()
 	return point;
 }
 
-uint NodeItem::getHash()
+size_t NodeItem::getHash()
 {
 	return hash;
 }

@@ -15,13 +15,13 @@ public:
 	QString index;
 	QPointF point;
 	QGraphicsTextItem* label = nullptr;
-	uint hash;
+	size_t hash;
 	//std::vector<std::tuple<NodeItem*,EdgeItem*>> outEdges;
 
 	void setIndex(const QString& newValue);
 	QString getIndex();
 	QPointF getPoint();
-	uint getHash();
+	size_t getHash();
 
 signals:
 	void nodeClicked(NodeItem* self);
