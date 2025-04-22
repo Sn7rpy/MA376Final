@@ -7,10 +7,10 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     MainWindow w;
 
-    QString filePath = "graphJit.png";
-    QString outPath = "jitBW.png";
-    QString edgesPath = "edgesSample.dat";
-    QString nodesPath = "nodesSample.dat";
+    QString filePath = "inclassSample.png";
+    QString outPath = "inclassBW.png";
+    QString edgesPath = "edgesClass.dat";
+    QString nodesPath = "nodesClass.dat";
     QImage bwImg = processessGraphImg(filePath);
 
     w.getEdgeFile(edgesPath);

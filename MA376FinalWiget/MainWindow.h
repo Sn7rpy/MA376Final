@@ -47,6 +47,7 @@ public:
     void setBackgroundImg(const QString& filepath);
     void promptIndexChange();
     void handleClickedNode(NodeItem* clickedNode);
+    void resetEdges();
     void loadNodesFromFile(const QString& fileName = "nodes.dat");
     void loadLinesFromFile(const QString& fileName="edges.dat");
     void getNodeFile(const QString& fileName);
@@ -71,6 +72,8 @@ private:
     Ui::MainWindowClass *ui;
     QGraphicsScene* scene;
     NodeItem* firstSelected = nullptr;
+    std::vector<EdgeItem*> highlightedEdges;
+
     WindowState state;
 
     QString nodesFile;

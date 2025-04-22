@@ -145,6 +145,7 @@ void MainWindow::handleClickedNode(NodeItem* clickedNode) {
 			while (u.predecesor.predNode != NULL) {
 				EdgeItem* edge = edgesMap.value(u.predecesor.predEdge);
 				edge->setPen(QPen(Qt::green,3));
+				highlightedEdges.push_back(edge);
 				u = dijkstraResult.value(u.predecesor.predNode);
 
 			}
@@ -180,9 +181,10 @@ void MainWindow::handleClickedNode(NodeItem* clickedNode) {
 				firstSelected = nullptr;
 			}
 		}
-		else if (state == WindowState::ChangeIndicies) {
+		else {
 			firstSelected->setPen(defaultPen);
 			firstSelected = nullptr;
+			resetEdges();
 		}
 
 
@@ -190,7 +192,16 @@ void MainWindow::handleClickedNode(NodeItem* clickedNode) {
 	else {
 		firstSelected->setPen(defaultPen);
 		firstSelected = nullptr;
+		resetEdges();
 	}
+}
+
+void MainWindow::resetEdges()
+{
+	for (EdgeItem* edge : highlightedEdges) {
+		edge->setPen(QPen(Qt::blue, 2));
+	}
+	highlightedEdges.clear();
 }
 
 void MainWindow::addNodesFromPoints(const std::vector<QPointF>& points)
@@ -280,8 +291,11 @@ void MainWindow::loadLinesFromFile(const QString& fileName) {
 		in >> line;
 		in >> index;
 
-		EdgeItem* edge = new EdgeItem(line, index);
+		EdgeItem* edge = new EdgeItem(line);
 		scene->addItem(edge);
+		if (index != "") {
+			edge->setIndex(index);
+		}
 		connect(edge, &EdgeItem::edgeClicked, this, &MainWindow::onEdgeClicked);
 		edgesMap.insert(edge->getHash(),edge);
 		if (index != "") {
@@ -359,7 +373,26 @@ void MainWindow::onEdgeClicked(EdgeItem* edge)
 		}
 	}
 	else if (state == WindowState::DeleteEdges) {
-		//finish later
+		size_t edgeHash = edge->getHash();
+		size_t p1Hash = edge->getHashP1();
+		size_t p2Hash = edge->getHashP2();
+		edgesMap.remove(edgeHash);
+		QList<connStruct> p1Values = connections.values(p1Hash);
+		QList<connStruct> p2Values = connections.values(p2Hash);
+		connections.remove(p1Hash);
+		connections.remove(p2Hash);
+		for (connStruct value : p1Values) {
+			if (value.edge != edgeHash) {
+				connections.insert(p1Hash, value);
+			}
+		}
+		for (connStruct value : p2Values) {
+			if (value.edge != edgeHash) {
+				connections.insert(p2Hash, value);
+			}
+		}
+		scene->removeItem(edge);
+		delete edge;
 	}
 }
 
@@ -467,6 +500,28 @@ std::vector<std::vector<double>> MainWindow::runFloydWar() {
 		}
 	}
 
+	QFile file("resultsFW.txt");
+	file.open(QIODevice::WriteOnly);
+
+	QTextStream out(&file);
+	out << "    ";
+	for (int x = 0; x < n; x++) {
+		NodeItem* node = nodesMap.value(colNrows.key(x));
+		out << node->getIndex() << ", ";
+	}
+	out << "\n \n";
+	int y = 0;
+	for (std::vector<double> rows : fwResult) {
+		NodeItem* node = nodesMap.value(colNrows.key(y));
+		out << node->getIndex() << "| ";
+		y++;
+		for (double item : rows) {
+			out << item << ",";
+		}
+		out << "\n";
+	}
+	file.close();
+
 	return output;
 }
 
@@ -478,7 +533,7 @@ void MainWindow::runDA()
 	firstSelected = nullptr;
 	dijktraBtn->setChecked(true);
 	
-	QFile file("resulatsDA.txt");
+	QFile file("resultsDA.txt");
 	file.open(QIODevice::WriteOnly);
 
 	QTextStream out(&file);
@@ -492,9 +547,15 @@ void MainWindow::runDA()
 			EdgeItem* predEdge = edgesMap.value(nodeResult.predecesor.predEdge);
 			double cost = nodeResult.minPath;
 
-			out << "Node:" << node->getPoint().x() << "," << node->getPoint().y()
-				<< " | Pred:" << predNode->getPoint().x() << "," << predNode->getPoint().y()
-				<< " | Edge:" << predEdge->getIndex() << " | Cost:" << cost << "\n";
+			if (node->getIndex() != "" && predNode->getIndex() != "") {
+				out << "Node:" << node->getIndex()<< " | Pred:" << predNode->getIndex()
+					<< " | Edge:" << predEdge->getIndex() << " | Cost:" << cost << "\n";
+			}else
+			{
+				out << "Node:" << node->getPoint().x() << "," << node->getPoint().y()
+					<< " | Pred:" << predNode->getPoint().x() << "," << predNode->getPoint().y()
+					<< " | Edge:" << predEdge->getIndex() << " | Cost:" << cost << "\n";
+			}
 
 		}
 	}else
@@ -519,17 +580,7 @@ void MainWindow::runDA()
 void MainWindow::runFW()
 {
 	fwResult = runFloydWar();
-	QFile file("resulatsFW.txt");
-	file.open(QIODevice::WriteOnly);
-
-	QTextStream out(&file);
-	for (std::vector<double> rows : fwResult) {
-		for (double item : rows) {
-			out << item << ",";
-		}
-		out << "\n";
-	}
-	file.close();
+	
 
 }
 

@@ -54,6 +54,7 @@ void EdgeItem::setIndex(QString& idx)
 {
 	index = idx;
 	label->setPlainText(idx);
+	setPen(QPen(Qt::cyan, 1));
 }
 
 QString EdgeItem::getIndex()

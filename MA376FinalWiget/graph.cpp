@@ -16,7 +16,7 @@ QImage processessGraphImg(const QString& pathToImage) {
 	for (int y = 0; y < inputImg.height(); y++) {
 		for (int x = 0; x < inputImg.width(); x++) {
 			QColor pixColor = inputImg.pixelColor(x, y);
-			if (pixColor.red() >= 200 && pixColor.green() <= 10 && pixColor.blue() <= 10) {
+			if (pixColor.red() >= 200 && pixColor.green() <= 10 && pixColor.blue() <= 35) {
 				outputImg.setPixelColor(x, y, QColor(255, 255, 255));
 			}
 			else {
