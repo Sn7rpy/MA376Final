@@ -39,19 +39,27 @@ MainWindow::MainWindow(QWidget *parent)
 	djkButton->resize(100, 30);
 
 	connect(djkButton, &QPushButton::clicked, this, &MainWindow::runDA);
+
+	QPushButton* fwButton = new QPushButton("Run FW Algrthm", this);
+	fwButton->move(120, 740);
+	fwButton->resize(100, 30);
+
+	connect(fwButton, &QPushButton::clicked, this, &MainWindow::runFW);
 	
 	QGroupBox* modeGroup = new QGroupBox("Mode", this);
 	modeGroup->move(1300, 15);
-	modeGroup->resize(200, 100);
+	modeGroup->resize(200, 130);
 
 	drawEdgeBtn = new QRadioButton("Draw Edges", modeGroup);
 	changeIndexesBtn = new QRadioButton("Change Indicies", modeGroup);
 	dijktraBtn = new QRadioButton("Run Dijkstra's Algorithm", modeGroup);
+	deleteEdgesBtn = new QRadioButton("Delete Edges", modeGroup);
 
 	QVBoxLayout* vbox = new QVBoxLayout;
 	vbox->addWidget(drawEdgeBtn);
 	vbox->addWidget(changeIndexesBtn);
 	vbox->addWidget(dijktraBtn);
+	vbox->addWidget(deleteEdgesBtn);
 	vbox->addStretch(1);
 	modeGroup->setLayout(vbox);
 
@@ -74,6 +82,12 @@ MainWindow::MainWindow(QWidget *parent)
 	connect(dijktraBtn, &QRadioButton::toggled, this, [=](bool checked) {
 		if (checked) {
 			state = WindowState::DijkstraMode;
+		}
+		});
+
+	connect(deleteEdgesBtn, &QRadioButton::toggled, this, [=](bool checked) {
+		if (checked) {
+			state = WindowState::DeleteEdges;
 		}
 		});
 
@@ -344,6 +358,9 @@ void MainWindow::onEdgeClicked(EdgeItem* edge)
 			edgeIndexes.insert(newIdx, edge);
 		}
 	}
+	else if (state == WindowState::DeleteEdges) {
+		//finish later
+	}
 }
 
 void MainWindow::loadWeights()
@@ -416,7 +433,40 @@ QHash<size_t, dijOutput> MainWindow::runDijkstras(NodeItem* startNode) {
 }
 
 std::vector<std::vector<double>> MainWindow::runFloydWar() {
-	std::vector<std::vector<double>> output;
+	int n = nodesMap.size();
+	double pos_inf = std::numeric_limits<double>::infinity();
+	std::vector<std::vector<double>> output(n,std::vector<double>(n,pos_inf));
+
+	QHash<size_t, int> colNrows;
+
+	int a = 0;
+	for (size_t nodeHash : nodesMap.keys()) {
+		colNrows.insert(nodeHash,a);
+		output[a][a] = 0;
+		a++;
+	}
+	//make adjacency matrix
+	for (size_t origin : connections.keys()) {
+		for (const connStruct& conn : connections.values(origin)) {
+			if (conn.reverseDir) { 
+				int edgeWeight = edgesMap.value(conn.edge)->getTimeWeight(conn.reverseDir);
+				output[colNrows.value(conn.outNode)][colNrows.value(origin)] = edgeWeight;
+			}
+			int edgeWeight = edgesMap.value(conn.edge)->getTimeWeight(conn.reverseDir);
+			output[colNrows.value(origin)][colNrows.value(conn.outNode)] = edgeWeight;
+		}
+	}
+
+	for (int k = 0; k < n; k++) {
+		for (int i = 0; i < n; i++) {
+			for (int j = 0; j < n; j++) {
+				if (output[i][k] + output[k][j] < output[i][j]) {
+					output[i][j] = output[i][k] + output[k][j];
+				}
+			}
+		}
+	}
+
 	return output;
 }
 
@@ -464,6 +514,23 @@ void MainWindow::runDA()
 	out << dijkstraResult.size();
 
 	file.close();
+}
+
+void MainWindow::runFW()
+{
+	fwResult = runFloydWar();
+	QFile file("resulatsFW.txt");
+	file.open(QIODevice::WriteOnly);
+
+	QTextStream out(&file);
+	for (std::vector<double> rows : fwResult) {
+		for (double item : rows) {
+			out << item << ",";
+		}
+		out << "\n";
+	}
+	file.close();
+
 }
 
 

@@ -18,7 +18,8 @@ QT_END_NAMESPACE
 enum class WindowState {
     DrawEdges,
     ChangeIndicies,
-    DijkstraMode
+    DijkstraMode,
+    DeleteEdges
 };
 
 struct predOut {
@@ -55,7 +56,6 @@ public:
     QHash<size_t, dijOutput> runDijkstras(NodeItem* startNode);
     std::vector<std::vector<double>> runFloydWar();
 
-    QHash<size_t, dijOutput> dijkstraResult;
 
 
     ~MainWindow();
@@ -65,6 +65,7 @@ private slots:
     void onEdgeClicked(EdgeItem* edge);
     void loadWeights();
     void runDA();
+    void runFW();
 
 private:
     Ui::MainWindowClass *ui;
@@ -85,7 +86,10 @@ private:
     QRadioButton* drawEdgeBtn;
     QRadioButton* changeIndexesBtn;
     QRadioButton* dijktraBtn;
+    QRadioButton* deleteEdgesBtn;
 
+    QHash<size_t, dijOutput> dijkstraResult;
 
+    std::vector<std::vector<double>> fwResult;
 
 };
