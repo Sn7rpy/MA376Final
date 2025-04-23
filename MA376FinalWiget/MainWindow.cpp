@@ -329,10 +329,10 @@ void MainWindow::setWeightsFromCSV(const QString& filepath)
 
 		newWeights.timeForw = cells[2].trimmed().toInt();
 		newWeights.timeBack = cells[3].trimmed().toInt();
-		newWeights.scene = cells[4].trimmed().toInt();
-		newWeights.inside = cells[5].trimmed().toInt();
-		newWeights.cover = cells[6].trimmed().toInt();
-		newWeights.distance = cells[7].trimmed().toDouble();
+		newWeights.scene = 1;//cells[4].trimmed().toInt();
+		newWeights.inside = 0;//cells[5].trimmed().toInt();
+		newWeights.cover = 0;//cells[6].trimmed().toInt();
+		newWeights.distance = 0;//cells[7].trimmed().toDouble();
 
 		if (edgeIndexes.contains(index)){ 
 			edgeIndexes.value(index)->setWeights(newWeights); }
@@ -579,8 +579,7 @@ void MainWindow::runDA()
 
 void MainWindow::runFW()
 {
-	fwResult = runFloydWar();
-	
+	fwResult = runFloydWar();	
 
 }
 

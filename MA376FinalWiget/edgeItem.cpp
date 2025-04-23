@@ -26,7 +26,7 @@ EdgeItem::EdgeItem(const QLineF& line, const QString& idx, QGraphicsItem* parent
 	label->setPlainText(index);
 	label->setDefaultTextColor(Qt::black);
 	QFont font;
-	font.setPointSize(10);
+	font.setPointSize(6);
 	font.setItalic(true);
 	label->setFont(font);
 	label->setPos(line.center());
@@ -34,7 +34,7 @@ EdgeItem::EdgeItem(const QLineF& line, const QString& idx, QGraphicsItem* parent
 	arrow = new QGraphicsPolygonItem(this);
 	arrow->setBrush(Qt::blue);
 
-	arrowSize = 10.0;
+	arrowSize = 5.0;
 	triangle << QPointF(0, 0) 
 		<< QPointF(-arrowSize, arrowSize / 2) 
 		<< QPointF(-arrowSize, -arrowSize / 2);
@@ -55,6 +55,7 @@ void EdgeItem::setIndex(QString& idx)
 	index = idx;
 	label->setPlainText(idx);
 	setPen(QPen(Qt::cyan, 1));
+	arrow->setBrush(Qt::cyan);
 }
 
 QString EdgeItem::getIndex()

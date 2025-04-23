@@ -11,7 +11,7 @@ class NodeItem : public QObject, public QGraphicsEllipseItem
 {
 	Q_OBJECT
 public:
-	NodeItem(const QPointF& pos, qreal radius = 7.0, const QBrush& color = Qt::red);
+	NodeItem(const QPointF& pos, qreal radius = 5.0, const QBrush& color = Qt::red);
 	QString index;
 	QPointF point;
 	QGraphicsTextItem* label = nullptr;
